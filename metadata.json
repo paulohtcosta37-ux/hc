@@ -1,0 +1,6 @@
+{
+  "name": "Conversor de Texto em Fala",
+  "description": "Aplicativo moderno de conversão de texto em fala (TTS) com Gemini 3.1 Flash, seleção de estilos emocionais, sotaques regionais brasileiros e controle de velocidade.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
