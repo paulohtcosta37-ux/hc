@@ -172,26 +172,75 @@ export default function App() {
     const accentObj = BRAZILIAN_ACCENTS.find((a) => a.id === selectedAccent);
 
     try {
-      const response = await fetch('/api/tts/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text.trim(),
-          engine: activeEngine,
-          language: selectedLanguage,
-          languageName: langObj?.name || 'Português (Brasil)',
-          accent: selectedLanguage === 'pt-BR' ? selectedAccent : '',
-          accentDescription: selectedLanguage === 'pt-BR' ? accentObj?.description : '',
-          styles: selectedStyles,
-          voice: selectedVoice,
-          speed,
-          pitch,
-          apiKey: apiKey.trim(),
-        }),
-      });
+      let response: Response | null = null;
+      let isStaticHosting = false;
+
+      try {
+        response = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            text: text.trim(),
+            engine: activeEngine,
+            language: selectedLanguage,
+            languageName: langObj?.name || 'Português (Brasil)',
+            accent: selectedLanguage === 'pt-BR' ? selectedAccent : '',
+            accentDescription: selectedLanguage === 'pt-BR' ? accentObj?.description : '',
+            styles: selectedStyles,
+            voice: selectedVoice,
+            speed,
+            pitch,
+            apiKey: apiKey.trim(),
+          }),
+        });
+      } catch (fetchErr) {
+        // Static GitHub Pages hosting without backend
+        isStaticHosting = true;
+      }
+
+      // If on GitHub Pages static hosting
+      if (isStaticHosting || (response && response.status === 404)) {
+        if (activeEngine === 'gemini' && apiKey.trim()) {
+          const { synthesizeBrowserGemini } = await import('./utils/clientTTS');
+          const directions: string[] = [];
+          if (selectedAccent && selectedAccent !== 'padrao') {
+            directions.push(`Fale com sotaque ${selectedAccent}`);
+          }
+          if (selectedStyles.length > 0) {
+            directions.push(`Estilo: ${selectedStyles.join(', ')}`);
+          }
+          const geminiResult = await synthesizeBrowserGemini(
+            text.trim(),
+            apiKey.trim(),
+            ['Kore', 'Aoede', 'Puck', 'Charon', 'Fenrir'].includes(selectedVoice) ? selectedVoice : 'Kore',
+            directions
+          );
+
+          const clientAudioItem = {
+            audioBase64: geminiResult.audioBase64,
+            mimeType: 'audio/wav',
+            durationSec: geminiResult.durationSec,
+            text: text.trim(),
+            voice: selectedVoice,
+            accent: selectedAccent,
+            styles: selectedStyles,
+            engineUsed: 'gemini' as EngineType,
+          };
+          setCurrentAudio(clientAudioItem);
+          return;
+        } else {
+          // Use Browser Web Speech on static hosting
+          handleLocalWebSpeechSynthesis();
+          return;
+        }
+      }
+
+      if (!response) {
+        throw new Error('Não foi possível conectar ao serviço de áudio.');
+      }
 
       const responseText = await response.text();
       let data: any = null;
