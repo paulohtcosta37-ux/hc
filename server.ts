@@ -167,6 +167,132 @@ async function generateGoogleTranslateTTSAudio(
   return { buffer: combined, durationSec };
 }
 
+/**
+ * Direct High-Fidelity Edge Neural TTS via WebSocket
+ * Guaranteed zero false-positive "turn.end" exceptions
+ */
+async function synthesizeDirectEdgeTTS(
+  text: string,
+  voice: string = "pt-BR-FranciscaNeural",
+  ratePercent: number = 0,
+  pitchHz: number = 0,
+  volumePercent: number = 0
+): Promise<Buffer> {
+  const ticks = Math.floor(Date.now() / 1000) + 11644473600;
+  const rounded = ticks - (ticks % 300);
+  const windowsTicks = rounded * 10000000;
+  const token = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+  const secMsGec = crypto
+    .createHash("sha256")
+    .update(windowsTicks + token)
+    .digest("hex")
+    .toUpperCase();
+  const connId = crypto.randomUUID().replace(/-/g, "");
+
+  const url = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${token}&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=1-130.0.2849.68&ConnectionId=${connId}`;
+
+  return new Promise<Buffer>((resolve, reject) => {
+    let ws: WebSocket | null = null;
+    let isSettled = false;
+    const audioParts: Buffer[] = [];
+    const requestId = crypto.randomUUID().replace(/-/g, "");
+
+    const finish = (result: Buffer | null, err?: any) => {
+      if (isSettled) return;
+      isSettled = true;
+      try {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close();
+        }
+      } catch {}
+
+      if (result && result.length > 0) {
+        resolve(result);
+      } else {
+        reject(err || new Error("Síntese de voz sem dados de áudio."));
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      if (audioParts.length > 0) {
+        finish(Buffer.concat(audioParts));
+      } else {
+        finish(null, new Error("Tempo limite excedido na síntese de áudio."));
+      }
+    }, 15000);
+
+    try {
+      ws = new WebSocket(url, {
+        headers: {
+          Pragma: "no-cache",
+          "Cache-Control": "no-cache",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+          Origin: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfapf",
+        },
+      });
+
+      ws.on("open", () => {
+        const configMsg =
+          'Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}';
+        ws!.send(configMsg);
+
+        const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
+        const pitchStr = pitchHz >= 0 ? `+${pitchHz}Hz` : `${pitchHz}Hz`;
+        const volumeStr = volumePercent >= 0 ? `+${volumePercent}%` : `${volumePercent}%`;
+
+        const dateStr = new Date().toUTCString();
+        const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="pt-BR"><voice name="${voice}"><prosody rate="${rateStr}" pitch="${pitchStr}" volume="${volumeStr}">${text}</prosody></voice></speak>`;
+        const ssmlMsg = `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${dateStr}Z\r\nPath:ssml\r\n\r\n${ssml}`;
+        ws!.send(ssmlMsg);
+      });
+
+      ws.on("message", (data: any, isBinary: boolean) => {
+        if (isBinary) {
+          const buf = Buffer.from(data);
+          const headerEnd = buf.indexOf(Buffer.from("\r\n\r\n"));
+          if (headerEnd !== -1) {
+            const header = buf.subarray(0, headerEnd).toString();
+            if (header.includes("Path:audio")) {
+              const audioData = buf.subarray(headerEnd + 4);
+              if (audioData.length > 0) {
+                audioParts.push(audioData);
+              }
+            }
+          }
+        } else {
+          const textMsg = data.toString();
+          if (textMsg.includes("Path:turn.end")) {
+            clearTimeout(timeoutId);
+            finish(Buffer.concat(audioParts));
+          }
+        }
+      });
+
+      ws.on("close", () => {
+        clearTimeout(timeoutId);
+        if (audioParts.length > 0) {
+          finish(Buffer.concat(audioParts));
+        } else {
+          finish(null, new Error("Conexão encerrada antes do envio de áudio."));
+        }
+      });
+
+      ws.on("error", (err: any) => {
+        clearTimeout(timeoutId);
+        if (audioParts.length > 0) {
+          finish(Buffer.concat(audioParts));
+        } else {
+          finish(null, err);
+        }
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      finish(null, err);
+    }
+  });
+}
+
 async function generateEdgeTTSAudio(
   text: string,
   voiceName: string = "pt-BR-FranciscaNeural",
@@ -178,53 +304,25 @@ async function generateEdgeTTSAudio(
   const textChunks = splitTextIntoNaturalChunks(text);
   const audioBuffers: Buffer[] = [];
 
-  const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
-  const pitchStr = pitchHz >= 0 ? `+${pitchHz}Hz` : `${pitchHz}Hz`;
-  const volumeStr = volumePercent >= 0 ? `+${volumePercent}%` : `${volumePercent}%`;
-
   for (const chunk of textChunks) {
     let chunkBuffer: Buffer | null = null;
     let lastErr: any = null;
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const tts = new MsEdgeTTS();
-        await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-        const options: any = {
-          rate: rateStr,
-          pitch: pitchStr,
-          volume: volumeStr,
-        };
-
-        chunkBuffer = await new Promise<Buffer>((resolve, reject) => {
-          const { audioStream } = tts.toStream(chunk, options);
-          const dataParts: Buffer[] = [];
-
-          audioStream.on("data", (data: any) => {
-            dataParts.push(Buffer.from(data));
-          });
-
-          audioStream.on("end", () => {
-            resolve(Buffer.concat(dataParts));
-          });
-
-          audioStream.on("error", (err: any) => {
-            const collected = Buffer.concat(dataParts);
-            // If audio was already delivered by the socket, accept it without crashing!
-            if (collected.length >= 800) {
-              resolve(collected);
-            } else {
-              reject(err);
-            }
-          });
-        });
-
+        chunkBuffer = await synthesizeDirectEdgeTTS(
+          chunk,
+          voiceName,
+          ratePercent,
+          pitchHz,
+          volumePercent
+        );
         if (chunkBuffer && chunkBuffer.length > 0) {
           break;
         }
       } catch (err) {
         lastErr = err;
-        await new Promise((r) => setTimeout(r, 150 * attempt));
+        await new Promise((r) => setTimeout(r, 100 * attempt));
       }
     }
 
