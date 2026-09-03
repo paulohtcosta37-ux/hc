@@ -290,14 +290,66 @@ export const STYLE_TAGS: StyleTag[] = [
   },
 ];
 
-export const UNLIMITED_VOICES: VoiceOption[] = [
+export const UNIFIED_VOICES: VoiceOption[] = [
+  // Vozes Originais do Gemini AI
+  {
+    id: 'Kore',
+    name: 'Kore (Gemini)',
+    gender: 'Feminino',
+    toneDescription: 'Acolhedora, equilibrada, rica em harmônicos e muito natural.',
+    recommendedFor: 'Narração geral, audiolivros, assistente e poesias.',
+    engine: 'all',
+    lang: 'pt-BR',
+    isPopular: true,
+  },
+  {
+    id: 'Puck',
+    name: 'Puck (Gemini)',
+    gender: 'Masculino',
+    toneDescription: 'Dinâmico, expressivo, jovem e com excelente articulação.',
+    recommendedFor: 'Comerciais, diálogos, podcasts e sotaques regionais.',
+    engine: 'all',
+    lang: 'pt-BR',
+    isPopular: true,
+  },
+  {
+    id: 'Aoede',
+    name: 'Aoede (Gemini)',
+    gender: 'Feminino',
+    toneDescription: 'Melódica, lírica, refinada, calma e calorosa.',
+    recommendedFor: 'Dramatizações, literatura clássica, meditação e narrativas suaves.',
+    engine: 'all',
+    lang: 'pt-BR',
+    isPopular: true,
+  },
+  {
+    id: 'Charon',
+    name: 'Charon (Gemini)',
+    gender: 'Masculino',
+    toneDescription: 'Sóbrio, profundo, grave e com presença marcante.',
+    recommendedFor: 'Documentários, notícias solenes e suspense.',
+    engine: 'all',
+    lang: 'pt-BR',
+    isPopular: true,
+  },
+  {
+    id: 'Fenrir',
+    name: 'Fenrir (Gemini)',
+    gender: 'Masculino',
+    toneDescription: 'Firme, enérgico, claro e assertivo.',
+    recommendedFor: 'Instruções técnicas, motivação e esportes.',
+    engine: 'all',
+    lang: 'pt-BR',
+    isPopular: true,
+  },
+  // Vozes Neurais HD Complementares
   {
     id: 'pt-BR-FranciscaNeural',
     name: 'Francisca (HD)',
     gender: 'Feminino',
-    toneDescription: 'Acolhedora, natural, expressiva e rica em harmônicos.',
+    toneDescription: 'Acolhedora, natural, expressiva e padrão ouro.',
     recommendedFor: 'Audiolivros, vídeos do YouTube, comerciais e narração geral.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
     isPopular: true,
   },
@@ -307,7 +359,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Firme, autoritário, seguro e com excelente presença.',
     recommendedFor: 'Documentários, telejornais, vídeos corporativos e audiolivros.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
     isPopular: true,
   },
@@ -317,7 +369,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Jovem, animada, comunicativa e dinâmica.',
     recommendedFor: 'Podcasts, redes sociais, TikTok, Reels e diálogos modernos.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
     isPopular: true,
   },
@@ -327,7 +379,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Suave, calma, serena e delicada.',
     recommendedFor: 'Meditação, histórias para dormir, poesias e bem-estar.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -336,7 +388,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Jovem, descontraído, natural e fluido.',
     recommendedFor: 'Vlogs, tutoriais de jogos, YouTube e publicidade.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -345,7 +397,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Madura, didática, polida e articulada.',
     recommendedFor: 'E-learning, cursos online, treinamentos e palestras.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -354,7 +406,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Enérgico, motivacional, entusiasmado e veloz.',
     recommendedFor: 'Chamadas comerciais, esportes, trailers e motivação.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -363,7 +415,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Neutra, límpida, profissional e agradável.',
     recommendedFor: 'Atendimento ao cliente, assistentes virtuais e GPS.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -372,7 +424,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Solenemente cinematográfico, profundo e reflexivo.',
     recommendedFor: 'Ficção científica, fantasia, romances e audiodramas.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -381,7 +433,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Conversacional, amigável e despretensioso.',
     recommendedFor: 'Diálogos de podcast, entrevistas e aulas.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -390,7 +442,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Elegante, sóbria e técnica.',
     recommendedFor: 'Podcasts de tecnologia, negócios e finanças.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -399,7 +451,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Calorosa, afetuosa e envolvente.',
     recommendedFor: 'Contação de histórias e mensagens institucionais.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -408,7 +460,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Doce, alegre e clara.',
     recommendedFor: 'Conteúdo infantil, animações e fábulas.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -417,7 +469,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Grave clássico, ressonante e imponente.',
     recommendedFor: 'Documentários históricos, trailers de cinema e suspense.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -426,7 +478,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Polido, refinado e com dicção clássica.',
     recommendedFor: 'Leitura de biografias, filosofia e poesias.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
   {
@@ -435,17 +487,17 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Vibrante, comercial e persuasiva.',
     recommendedFor: 'Rádio, spots publicitários e podcasts rápidos.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-BR',
   },
-  // Vozes internacionais úteis
+  // Vozes Internacionais
   {
     id: 'pt-PT-DuarteNeural',
     name: 'Duarte (Portugal)',
     gender: 'Masculino',
     toneDescription: 'Português europeu tradicional e elegante.',
     recommendedFor: 'Conteúdo direcionado a Portugal.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-PT',
   },
   {
@@ -454,7 +506,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Português europeu claro e articulado.',
     recommendedFor: 'Conteúdo direcionado a Portugal.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'pt-PT',
   },
   {
@@ -463,7 +515,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Inglês americano nativo, expressivo e versátil.',
     recommendedFor: 'Vídeos internacionais em inglês.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'en-US',
   },
   {
@@ -472,7 +524,7 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Masculino',
     toneDescription: 'Inglês americano masculino profissional.',
     recommendedFor: 'Vídeos internacionais em inglês.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'en-US',
   },
   {
@@ -481,69 +533,13 @@ export const UNLIMITED_VOICES: VoiceOption[] = [
     gender: 'Feminino',
     toneDescription: 'Espanhol europeu límpido e expressivo.',
     recommendedFor: 'Conteúdo em espanhol.',
-    engine: 'unlimited',
+    engine: 'all',
     lang: 'es-ES',
-  },
-  {
-    id: 'es-MX-DaliaNeural',
-    name: 'Dalia (México)',
-    gender: 'Feminino',
-    toneDescription: 'Espanhol latino-americano caloroso.',
-    recommendedFor: 'Conteúdo em espanhol latino.',
-    engine: 'unlimited',
-    lang: 'es-MX',
   },
 ];
 
-export const GEMINI_VOICES: VoiceOption[] = [
-  {
-    id: 'Kore',
-    name: 'Kore',
-    gender: 'Feminino',
-    toneDescription: 'Acolhedora, equilibrada, rica em harmônicos e muito natural.',
-    recommendedFor: 'Narração geral, audiolivros, assistente e poesias.',
-    engine: 'gemini',
-    lang: 'pt-BR',
-    isPopular: true,
-  },
-  {
-    id: 'Aoede',
-    name: 'Aoede',
-    gender: 'Feminino',
-    toneDescription: 'Melódica, lírica, refinada, calma e calorosa.',
-    recommendedFor: 'Dramatizações, literatura clássica, meditação e narrativas suaves.',
-    engine: 'gemini',
-    lang: 'pt-BR',
-  },
-  {
-    id: 'Puck',
-    name: 'Puck',
-    gender: 'Masculino',
-    toneDescription: 'Dinâmico, expressivo, jovem e com excelente articulação.',
-    recommendedFor: 'Comerciais, diálogos, podcasts e sotaques regionais.',
-    engine: 'gemini',
-    lang: 'pt-BR',
-    isPopular: true,
-  },
-  {
-    id: 'Charon',
-    name: 'Charon',
-    gender: 'Masculino',
-    toneDescription: 'Sóbrio, profundo, grave e com presença marcante.',
-    recommendedFor: 'Documentários, notícias solenes e suspense.',
-    engine: 'gemini',
-    lang: 'pt-BR',
-  },
-  {
-    id: 'Fenrir',
-    name: 'Fenrir',
-    gender: 'Masculino',
-    toneDescription: 'Firme, enérgico, claro e assertivo.',
-    recommendedFor: 'Instruções técnicas, motivação e esportes.',
-    engine: 'gemini',
-    lang: 'pt-BR',
-  },
-];
+export const UNLIMITED_VOICES = UNIFIED_VOICES;
+export const GEMINI_VOICES = UNIFIED_VOICES.slice(0, 5);
 
 export const SAMPLE_TEXTS = [
   {
@@ -551,7 +547,7 @@ export const SAMPLE_TEXTS = [
     lang: 'pt-BR',
     accent: 'padrao',
     styles: ['confiante', 'jornalística'],
-    text: 'Bem-vindo ao novo Conversor Neural de Texto em Fala! Agora você pode sintetizar áudios sem qualquer limite de cota, com máxima qualidade em vinte e quatro quilohertz e sotaques autênticos de todo o Brasil.',
+    text: 'Bem-vindo ao novo Conversor de Texto em Fala com áudio do Gemini AI Ilimitado! Agora você pode sintetizar áudios sem precisar de nenhuma chave de API e sem qualquer limite de cota, com máxima qualidade e sotaques autênticos de todo o Brasil.',
   },
   {
     title: 'Dia de Praia no Rio',

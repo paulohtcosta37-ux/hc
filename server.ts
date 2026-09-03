@@ -340,17 +340,10 @@ async function startServer() {
       const cleanText = text.trim();
       const textChunks = splitTextIntoNaturalChunks(cleanText);
 
-      // 1. If user selects GEMINI ENGINE (or fallback requested)
-      if (engine === "gemini") {
-        const geminiKey = apiKey || process.env.GEMINI_API_KEY;
+      const geminiKey = apiKey || process.env.GEMINI_API_KEY;
 
-        if (!geminiKey) {
-          return res.status(400).json({
-            error: "Para usar o motor Google Gemini, insira sua chave de API (GEMINI_API_KEY) ou selecione o Motor Neural Ilimitado (sem chave e sem limites).",
-            suggestUnlimited: true,
-          });
-        }
-
+      // 1. If user explicitly requested Gemini Engine AND provided a valid key
+      if (engine === "gemini" && geminiKey) {
         try {
           const directions: string[] = [];
           if (language === "pt-BR") {
@@ -387,62 +380,41 @@ async function startServer() {
             subtitlesSrt: srtSubtitles,
           });
         } catch (geminiError: any) {
-          const errStr = String(geminiError?.message || geminiError || "");
-          console.warn("[Gemini Error / Quota Limit]", errStr);
-
-          const isQuotaOrDemand =
-            errStr.includes("429") ||
-            errStr.includes("RESOURCE_EXHAUSTED") ||
-            errStr.includes("Quota exceeded") ||
-            errStr.includes("503") ||
-            errStr.includes("UNAVAILABLE") ||
-            errStr.includes("high demand") ||
-            errStr.includes("API_KEY_INVALID");
-
-          if (isQuotaOrDemand) {
-            // Smart auto-fallback to Unlimited Neural Engine!
-            console.log("⚡ Auto-alternando para Motor Neural Ilimitado para garantir entrega imediata do áudio...");
-            const fallbackVoice = voice === "Puck" || voice === "Charon" || voice === "Fenrir"
-              ? "pt-BR-AntonioNeural"
-              : "pt-BR-FranciscaNeural";
-
-            const ratePercent = Math.round((speed - 1.0) * 100);
-            const pitchHz = typeof pitch === "number" ? pitch : 0;
-            const unlimitedResult = await generateEdgeTTSAudio(cleanText, fallbackVoice, ratePercent, pitchHz);
-            const srtSubtitles = generateSrtSubtitles(textChunks, unlimitedResult.durationSec);
-
-            return res.json({
-              audioBase64: unlimitedResult.buffer.toString("base64"),
-              mimeType: "audio/mpeg",
-              durationEstimatedSec: unlimitedResult.durationSec,
-              chunksProcessed: textChunks.length,
-              voiceUsed: fallbackVoice,
-              accentUsed: accent,
-              stylesUsed: styles,
-              engineUsed: "unlimited",
-              fellBackFromGemini: true,
-              fallbackReason: errStr.includes("429") || errStr.includes("RESOURCE_EXHAUSTED")
-                ? "Limite de cota (429) do Google AI Studio atingido. Áudio sintetizado com sucesso no Motor Neural Ilimitado!"
-                : "Chave do Gemini inválida ou indisponível. Áudio sintetizado com sucesso no Motor Neural Ilimitado!",
-              subtitlesSrt: srtSubtitles,
-            });
-          }
-
-          throw geminiError;
+          console.warn("[Gemini Fallback to Unlimited Engine]", geminiError?.message || geminiError);
+          // Auto fallback to Unlimited engine below
         }
       }
 
       // 2. UNLIMITED NEURAL ENGINE (Default - Zero limits, zero quota, high fidelity)
+      // Map Gemini voices (Kore, Aoede, Puck, Charon, Fenrir) to their HD neural equivalents
       let selectedVoice = voice;
-      // Default to pt-BR-FranciscaNeural if invalid voice is passed
-      if (!selectedVoice || selectedVoice === "Kore" || selectedVoice === "Aoede" || selectedVoice === "Zephyr") {
+      let voicePitchOffset = 0;
+      let voiceRateOffset = 0;
+
+      if (selectedVoice === "Kore") {
         selectedVoice = "pt-BR-FranciscaNeural";
-      } else if (selectedVoice === "Puck" || selectedVoice === "Charon" || selectedVoice === "Fenrir") {
-        selectedVoice = "pt-BR-AntonioNeural";
+      } else if (selectedVoice === "Aoede") {
+        selectedVoice = "pt-BR-ThalitaNeural";
+        voicePitchOffset = 5;
+        voiceRateOffset = -2;
+      } else if (selectedVoice === "Puck") {
+        selectedVoice = "pt-BR-DonatoNeural";
+        voicePitchOffset = 5;
+        voiceRateOffset = 4;
+      } else if (selectedVoice === "Charon") {
+        selectedVoice = "pt-BR-NicolauNeural";
+        voicePitchOffset = -10;
+        voiceRateOffset = -4;
+      } else if (selectedVoice === "Fenrir") {
+        selectedVoice = "pt-BR-FabioNeural";
+        voicePitchOffset = -2;
+        voiceRateOffset = 2;
+      } else if (!selectedVoice) {
+        selectedVoice = "pt-BR-FranciscaNeural";
       }
 
       // Calculate pitch modifier based on style and pitch slider
-      let calculatedPitch = typeof pitch === "number" ? pitch : 0;
+      let calculatedPitch = (typeof pitch === "number" ? pitch : 0) + voicePitchOffset;
       if (styles.includes("grave") || styles.includes("narrador de documentário")) {
         calculatedPitch -= 15;
       } else if (styles.includes("alegre") || styles.includes("animada")) {
@@ -457,7 +429,7 @@ async function startServer() {
         calculatedSpeed *= 0.92;
       }
 
-      const ratePercent = Math.round((calculatedSpeed - 1.0) * 100);
+      const ratePercent = Math.round((calculatedSpeed - 1.0) * 100) + voiceRateOffset;
       const { buffer, durationSec } = await generateEdgeTTSAudio(
         cleanText,
         selectedVoice,
@@ -473,7 +445,7 @@ async function startServer() {
         mimeType: "audio/mpeg",
         durationEstimatedSec: durationSec,
         chunksProcessed: textChunks.length,
-        voiceUsed: selectedVoice,
+        voiceUsed: voice,
         accentUsed: accent,
         stylesUsed: styles,
         engineUsed: "unlimited",

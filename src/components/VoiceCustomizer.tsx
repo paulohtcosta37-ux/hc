@@ -9,10 +9,6 @@ import {
   Check,
   Plus,
   X,
-  Key,
-  ShieldCheck,
-  Zap,
-  Cpu,
   Flame,
   RotateCcw,
 } from 'lucide-react';
@@ -20,10 +16,9 @@ import {
   LANGUAGES,
   BRAZILIAN_ACCENTS,
   STYLE_TAGS,
-  UNLIMITED_VOICES,
-  GEMINI_VOICES,
+  UNIFIED_VOICES,
 } from '../data/options';
-import { EngineType, VoiceOption } from '../types';
+import { EngineType } from '../types';
 
 interface VoiceCustomizerProps {
   engine: EngineType;
@@ -47,8 +42,6 @@ interface VoiceCustomizerProps {
 }
 
 export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
-  engine,
-  onEngineChange,
   selectedLanguage,
   onLanguageChange,
   selectedAccent,
@@ -62,21 +55,18 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
   onPitchChange,
   speed,
   onSpeedChange,
-  apiKey,
-  onApiKeyChange,
   onInsertSamplePhrase,
 }) => {
-  const [activeTab, setActiveTab] = useState<'voices' | 'accents' | 'styles' | 'prosody' | 'apikey'>('voices');
+  const [activeTab, setActiveTab] = useState<'voices' | 'accents' | 'styles' | 'prosody'>('voices');
   const [accentSearch, setAccentSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState<'all' | 'Feminino' | 'Masculino'>('all');
 
   const currentLang = LANGUAGES.find((l) => l.code === selectedLanguage) || LANGUAGES[0];
   const isBrazilianPortuguese = selectedLanguage === 'pt-BR';
 
-  const availableVoices = engine === 'gemini' ? GEMINI_VOICES : UNLIMITED_VOICES;
-  const filteredVoices = availableVoices.filter((v) => {
+  const filteredVoices = UNIFIED_VOICES.filter((v) => {
     if (genderFilter !== 'all' && v.gender !== genderFilter) return false;
-    if (engine === 'unlimited' && v.lang && v.lang !== selectedLanguage && selectedLanguage !== 'pt-BR') {
+    if (v.lang && v.lang !== selectedLanguage && selectedLanguage !== 'pt-BR') {
       return v.lang === selectedLanguage;
     }
     return true;
@@ -94,100 +84,8 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
       id="voice-customizer-panel"
       className="bg-[#121212] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-5"
     >
-      {/* 1. TOP ENGINE SELECTOR */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-          <Cpu className="w-3.5 h-3.5 text-blue-400" />
-          <span>Motor de Síntese de Voz:</span>
-        </label>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {/* Unlimited Engine */}
-          <button
-            id="engine-btn-unlimited"
-            onClick={() => {
-              onEngineChange('unlimited');
-              if (['Kore', 'Aoede', 'Puck', 'Charon', 'Fenrir'].includes(selectedVoice)) {
-                onVoiceChange('pt-BR-FranciscaNeural');
-              }
-            }}
-            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-              engine === 'unlimited'
-                ? 'bg-blue-600/20 border-blue-500/80 ring-1 ring-blue-500/50 shadow-lg shadow-blue-600/15 text-white'
-                : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10 text-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm">
-                <Flame className="w-4 h-4 text-amber-400" />
-                <span>Neural Ilimitado</span>
-              </div>
-              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
-                Sem Limites
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1">
-              Zero cota, 100% gratuito e sem necessidade de chave de API.
-            </p>
-          </button>
-
-          {/* Gemini AI Studio */}
-          <button
-            id="engine-btn-gemini"
-            onClick={() => {
-              onEngineChange('gemini');
-              if (!['Kore', 'Aoede', 'Puck', 'Charon', 'Fenrir'].includes(selectedVoice)) {
-                onVoiceChange('Kore');
-              }
-            }}
-            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-              engine === 'gemini'
-                ? 'bg-indigo-600/20 border-indigo-500/80 ring-1 ring-indigo-500/50 shadow-lg shadow-indigo-600/15 text-white'
-                : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10 text-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span>Google Gemini AI</span>
-              </div>
-              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
-                Auto-Fallback
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1">
-              Gemini 3.1 Flash com chave própria ou chave do servidor.
-            </p>
-          </button>
-
-          {/* Local Web Speech */}
-          <button
-            id="engine-btn-local"
-            onClick={() => onEngineChange('local')}
-            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-              engine === 'local'
-                ? 'bg-teal-600/20 border-teal-500/80 ring-1 ring-teal-500/50 shadow-lg shadow-teal-600/15 text-white'
-                : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10 text-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm">
-                <Zap className="w-4 h-4 text-teal-400" />
-                <span>Navegador Local</span>
-              </div>
-              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 uppercase tracking-wider">
-                0ms Offline
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1">
-              Síntese instantânea de latência zero direto no navegador.
-            </p>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. LANGUAGE SELECTOR BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-white/5">
+      {/* 1. LANGUAGE SELECTOR BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
         <div className="flex items-center gap-3">
           <span className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
             <Globe className="w-4 h-4" />
@@ -218,8 +116,8 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
         </div>
       </div>
 
-      {/* 3. NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/5">
+      {/* 2. NAVIGATION TABS */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Tab Voices */}
           <button
@@ -288,22 +186,6 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
             <Sliders className="w-3.5 h-3.5" />
             <span>Tom & Velocidade</span>
           </button>
-
-          {/* Tab API Key */}
-          {engine === 'gemini' && (
-            <button
-              id="tab-apikey"
-              onClick={() => setActiveTab('apikey')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'apikey'
-                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 shadow-sm'
-                  : 'bg-white/5 border border-white/5 text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>Chave Gemini</span>
-            </button>
-          )}
         </div>
 
         {selectedStyles.length > 0 && activeTab === 'styles' && (
@@ -317,14 +199,15 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
         )}
       </div>
 
-      {/* 4. TAB CONTENTS */}
+      {/* 3. TAB CONTENTS */}
 
       {/* TAB: VOICES */}
       {activeTab === 'voices' && (
         <div id="section-voices" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
-            <span>
-              Selecione o timbre da voz neural ({filteredVoices.length} vozes disponíveis):
+            <span className="flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>Vozes Gemini AI & Neurais ({filteredVoices.length} disponíveis • 100% Sem Limites):</span>
             </span>
             <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1 rounded-lg">
               <button
@@ -357,6 +240,8 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-84 overflow-y-auto pr-1 scrollbar-thin">
             {filteredVoices.map((voice) => {
               const isSelected = selectedVoice === voice.id;
+              const isGeminiVoice = ['Kore', 'Puck', 'Aoede', 'Charon', 'Fenrir'].includes(voice.id);
+
               return (
                 <div
                   key={voice.id}
@@ -374,9 +259,9 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
                       <span className={isSelected ? 'text-white' : 'text-gray-200'}>{voice.name}</span>
                     </span>
                     <div className="flex items-center gap-1">
-                      {voice.isPopular && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          Popular
+                      {isGeminiVoice && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          Gemini AI
                         </span>
                       )}
                       <span
@@ -596,42 +481,6 @@ export const VoiceCustomizer: React.FC<VoiceCustomizerProps> = ({
                 <span>1.8x (Acelerada)</span>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB: GEMINI API KEY */}
-      {activeTab === 'apikey' && engine === 'gemini' && (
-        <div id="section-apikey" className="space-y-4">
-          <div className="flex items-start gap-3 p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-200">
-            <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <strong className="text-indigo-100 block">Chave de API do Google AI Studio (Opcional):</strong>
-              <p className="text-indigo-200/90 leading-relaxed">
-                Insira sua chave própria do Google AI Studio para usar os modelos Gemini. Se você não tiver uma chave ou atingir limite de cota, o sistema alternará automaticamente para o <strong>Motor Neural Ilimitado</strong> sem interromper o áudio.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="gemini-api-key-input" className="text-xs font-bold text-gray-300 flex items-center justify-between">
-              <span>Chave Gemini (AIzaSy...):</span>
-              {apiKey ? (
-                <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                  <Check className="w-3 h-3" /> Chave personalizada inserida
-                </span>
-              ) : (
-                <span className="text-[10px] text-gray-500">Usando padrão do ambiente</span>
-              )}
-            </label>
-            <input
-              id="gemini-api-key-input"
-              type="password"
-              placeholder="Cole sua GEMINI_API_KEY aqui (ex: AIzaSy...)"
-              value={apiKey}
-              onChange={(e) => onApiKeyChange(e.target.value)}
-              className="w-full px-4 py-2.5 text-xs font-mono bg-[#1a1a1a] border border-white/10 rounded-xl text-gray-200 outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
           </div>
         </div>
       )}

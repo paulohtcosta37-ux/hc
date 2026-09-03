@@ -28,7 +28,7 @@ export default function App() {
   const [selectedLanguage, setSelectedLanguage] = useState('pt-BR');
   const [selectedAccent, setSelectedAccent] = useState('padrao');
   const [selectedStyles, setSelectedStyles] = useState<string[]>(['confiante', 'jornalística']);
-  const [selectedVoice, setSelectedVoice] = useState('pt-BR-FranciscaNeural');
+  const [selectedVoice, setSelectedVoice] = useState('Kore');
   const [pitch, setPitch] = useState(0);
   const [speed, setSpeed] = useState(1.0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
