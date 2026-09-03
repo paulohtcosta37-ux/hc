@@ -119,16 +119,44 @@ function generateSrtSubtitles(chunks: string[], totalDurationSec: number): strin
   return srtEntries.join("\n");
 }
 
+/**
+ * Fallback synthesizer via Google TTS
+ */
+async function generateGoogleTranslateTTSAudio(
+  text: string,
+  lang: string = "pt-BR"
+): Promise<{ buffer: Buffer; durationSec: number }> {
+  const chunks = splitTextIntoNaturalChunks(text, 50, 200);
+  const audioBuffers: Buffer[] = [];
+
+  for (const chunk of chunks) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(
+      lang
+    )}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (!res.ok) throw new Error(`Google TTS status ${res.status}`);
+    const arrayBuf = await res.arrayBuffer();
+    audioBuffers.push(Buffer.from(arrayBuf));
+  }
+
+  const combined = Buffer.concat(audioBuffers);
+  const durationSec = Math.max(0.5, Math.round((combined.length / 4000) * 10) / 10);
+  return { buffer: combined, durationSec };
+}
+
 async function generateEdgeTTSAudio(
   text: string,
   voiceName: string = "pt-BR-FranciscaNeural",
   ratePercent: number = 0,
   pitchHz: number = 0,
-  volumePercent: number = 0
+  volumePercent: number = 0,
+  language: string = "pt-BR"
 ): Promise<{ buffer: Buffer; durationSec: number }> {
-  const tts = new MsEdgeTTS();
-  await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-
   const textChunks = splitTextIntoNaturalChunks(text);
   const audioBuffers: Buffer[] = [];
 
@@ -137,36 +165,61 @@ async function generateEdgeTTSAudio(
   const volumeStr = volumePercent >= 0 ? `+${volumePercent}%` : `${volumePercent}%`;
 
   for (const chunk of textChunks) {
-    const chunkBuffer = await new Promise<Buffer>((resolve, reject) => {
+    let chunkBuffer: Buffer | null = null;
+    let lastErr: any = null;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
+        const tts = new MsEdgeTTS();
+        await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
         const options: any = {
           rate: rateStr,
           pitch: pitchStr,
           volume: volumeStr,
         };
 
-        const { audioStream } = tts.toStream(chunk, options);
-        const dataParts: Buffer[] = [];
+        chunkBuffer = await new Promise<Buffer>((resolve, reject) => {
+          const { audioStream } = tts.toStream(chunk, options);
+          const dataParts: Buffer[] = [];
 
-        audioStream.on("data", (data: any) => {
-          dataParts.push(Buffer.from(data));
+          audioStream.on("data", (data: any) => {
+            dataParts.push(Buffer.from(data));
+          });
+
+          audioStream.on("end", () => {
+            resolve(Buffer.concat(dataParts));
+          });
+
+          audioStream.on("error", (err: any) => {
+            const collected = Buffer.concat(dataParts);
+            if (collected.length >= 800) {
+              resolve(collected);
+            } else {
+              reject(err);
+            }
+          });
         });
 
-        audioStream.on("end", () => {
-          resolve(Buffer.concat(dataParts));
-        });
-
-        audioStream.on("error", (err: any) => {
-          reject(err);
-        });
+        if (chunkBuffer && chunkBuffer.length > 0) {
+          break;
+        }
       } catch (err) {
-        reject(err);
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 150 * attempt));
       }
-    });
-
-    if (chunkBuffer.length > 0) {
-      audioBuffers.push(chunkBuffer);
     }
+
+    if (!chunkBuffer || chunkBuffer.length === 0) {
+      console.warn(`[TTS Edge Fallback] Alternando bloco para Google TTS devido a: ${lastErr?.message || lastErr}`);
+      try {
+        const fallbackResult = await generateGoogleTranslateTTSAudio(chunk, language);
+        chunkBuffer = fallbackResult.buffer;
+      } catch (googleErr) {
+        throw lastErr || googleErr || new Error("Falha ao sintetizar áudio.");
+      }
+    }
+
+    audioBuffers.push(chunkBuffer);
   }
 
   const combined = Buffer.concat(audioBuffers);

@@ -137,12 +137,43 @@ function generateSrtSubtitles(chunks: string[], totalDurationSec: number): strin
 /**
  * Synthesizes audio using Microsoft Edge Neural TTS (100% Free & Unlimited)
  */
+/**
+ * Fallback synthesizer via Google TTS
+ */
+async function generateGoogleTranslateTTSAudio(
+  text: string,
+  lang: string = "pt-BR"
+): Promise<{ buffer: Buffer; durationSec: number }> {
+  const chunks = splitTextIntoNaturalChunks(text, 50, 200);
+  const audioBuffers: Buffer[] = [];
+
+  for (const chunk of chunks) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(
+      lang
+    )}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (!res.ok) throw new Error(`Google TTS status ${res.status}`);
+    const arrayBuf = await res.arrayBuffer();
+    audioBuffers.push(Buffer.from(arrayBuf));
+  }
+
+  const combined = Buffer.concat(audioBuffers);
+  const durationSec = Math.max(0.5, Math.round((combined.length / 4000) * 10) / 10);
+  return { buffer: combined, durationSec };
+}
+
 async function generateEdgeTTSAudio(
   text: string,
   voiceName: string = "pt-BR-FranciscaNeural",
   ratePercent: number = 0,
   pitchHz: number = 0,
-  volumePercent: number = 0
+  volumePercent: number = 0,
+  language: string = "pt-BR"
 ): Promise<{ buffer: Buffer; durationSec: number }> {
   const textChunks = splitTextIntoNaturalChunks(text);
   const audioBuffers: Buffer[] = [];
@@ -178,7 +209,13 @@ async function generateEdgeTTSAudio(
           });
 
           audioStream.on("error", (err: any) => {
-            reject(err);
+            const collected = Buffer.concat(dataParts);
+            // If audio was already delivered by the socket, accept it without crashing!
+            if (collected.length >= 800) {
+              resolve(collected);
+            } else {
+              reject(err);
+            }
           });
         });
 
@@ -187,12 +224,18 @@ async function generateEdgeTTSAudio(
         }
       } catch (err) {
         lastErr = err;
-        await new Promise((r) => setTimeout(r, 200 * attempt));
+        await new Promise((r) => setTimeout(r, 150 * attempt));
       }
     }
 
     if (!chunkBuffer || chunkBuffer.length === 0) {
-      throw lastErr || new Error("Falha ao sintetizar áudio.");
+      console.warn(`[TTS Edge Fallback] Alternando bloco para Google TTS devido a: ${lastErr?.message || lastErr}`);
+      try {
+        const fallbackResult = await generateGoogleTranslateTTSAudio(chunk, language);
+        chunkBuffer = fallbackResult.buffer;
+      } catch (googleErr) {
+        throw lastErr || googleErr || new Error("Falha ao sintetizar áudio.");
+      }
     }
 
     audioBuffers.push(chunkBuffer);
@@ -443,7 +486,9 @@ async function startServer() {
         cleanText,
         selectedVoice,
         ratePercent,
-        calculatedPitch
+        calculatedPitch,
+        0,
+        language
       );
 
       const srtSubtitles = generateSrtSubtitles(textChunks, durationSec);
